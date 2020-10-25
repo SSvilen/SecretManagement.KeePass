@@ -1,52 +1,10 @@
 using namespace KeePassStore
 function Get-Secret {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]
         $Name,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $VaultName,
-        [Parameter()]
-        [switch]
-        $AsPSCredential,
-        [Parameter()]
-        [switch]
-        $AsPlainText
-    )
-
-    $ErrorActionPreference = 'Stop'
-
-    if ($null -eq $script:pwDatabase) {
-        Open-KeePassVault -VaultName $VaultName
-    }
-
-    $keepassGetResult = [KeePassStore.KeePassVault]::ReadSecret($Name, $script:pwDatabase)
-
-    if ($keepassGetResult.count -gt 1) {
-        throw "Multiple ambiguous entries found for $Name, please remove the duplicate entry"
-    }
-
-    if ($AsPSCredential) {
-        Write-Output $keepassGetResult
-    } elseif ($AsPlainText) {
-        $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($keepassGetResult.Password)
-        $plainTextPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-        Write-Output -InputObject $plainTextPassword
-    } else {
-        Write-Output -InputObject $keepassGetResult.Password
-    }
-}
-
-function Set-Secret {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Name,
-
-        [Parameter(Mandatory = $true)]
-        [object]
-        $Secret,
 
         [Parameter(Mandatory = $true)]
         [string]
@@ -57,49 +15,107 @@ function Set-Secret {
         [String] $KeePassGroupPath = '/',
 
         [Parameter()]
-        [String]
-        $Title,
+        [switch]
+        $AsPSCredential,
 
         [Parameter()]
-        [String]
-        $UserName,
+        [switch]
+        $AsPlainText
+    )
+
+    try {
+        if ($null -eq $pwDatabase) {
+            $pwDatabase = Open-KeePassVault -VaultName $VaultName
+        }
+
+        $keepassGetResult = [KeePassStore.KeePassVault]::ReadSecret($Name, $pwDatabase, $KeePassGroupPath)
+
+        if ($keepassGetResult.count -gt 1) {
+            throw "Multiple ambiguous entries found for $Name, please remove the duplicate entry"
+        }
+
+        if ($AsPSCredential) {
+            [pscredential]::new($keepassGetResult.username, $keepassGetResult.password)
+        } elseif ($AsPlainText) {
+            $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($keepassGetResult.Password)
+            $plainTextPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+            $plainTextPassword
+        } else {
+            $keepassGetResult
+        }
+    } catch {
+        throw "Could not get the KeePass entry for $name. Error was $($_.exception.message)"
+    } finally {
+        $pwDatabase.Close()
+    }
+}
+
+function Set-Secret {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Name,
+
+        [Parameter(Mandatory = $true)]
+        [SecureString]
+        $Secret,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $VaultName,
+
+        [Parameter()]
+        [Alias('FullPath')]
+        [String] $KeePassGroupPath = '/',
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'ExpirationDate')]
+        [switch]
+        $Expires,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'ExpirationDate')]
+        [DateTime]
+        $ExpiryTime,
+
+        [Parameter()]
+        [switch]
+        $CreateKeePassGroup,
 
         [Parameter()]
         [String]
         $Notes,
 
         [Parameter()]
+        [String[]]
+        $Tags,
+
+        [Parameter()]
         [String]
         $URL,
 
         [Parameter()]
-        [KeePassLib.PwIcon]
-        $IconName,
-
-        [Parameter()]
-        [bool]
-        $Expires,
-
-        [Parameter()]
-        [DateTime]
-        $ExpiryTime,
-
-        [Parameter()]
-        [String[]]
-        $Tags
+        [String]
+        $UserName
     )
 
-    if ($null -eq $script:pwDatabase) {
-        Open-KeePassVault -VaultName $VaultName
-    }
-    if ($KeePassGroupPath -notmatch '^\/[\/\w]*') {
-        throw "The group path that was specified is not valid. The path should have the following format: /group/group1/group2"
-    }
+    try {
+        if ($KeePassGroupPath -notmatch '^\/[\/\w]*') {
+            throw "The group path that was specified is not valid. The path should have the following format: /group/group1/group2"
+        }
+        if ($null -eq $pwDatabase) {
+            $pwDatabase = Open-KeePassVault -VaultName $VaultName
+        }
 
-    [System.Management.Automation.PSCmdlet]::CommonParameters | ForEach-Object { $PSBoundParameters.Remove($_) }
-    [KeePassStore.KeePassVault]::SetSecret($script:pwDatabase, $PSBoundParameters)
+        [System.Management.Automation.PSCmdlet]::CommonParameters | ForEach-Object { $PSBoundParameters.Remove($_) | Out-Null }
+        [Void]$PSBoundParameters.Remove('VaultName')
 
-    Write-Output $true
+        [KeePassStore.KeePassVault]::SetSecret($pwDatabase, $PSBoundParameters)
+        $true
+    } catch {
+        thow "Could not set the secret.Error was $($_.exception.message)"
+    } finally {
+        $pwDatabase.Close()
+    }
 }
 
 function Remove-Secret {

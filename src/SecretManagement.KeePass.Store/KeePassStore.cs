@@ -51,7 +51,7 @@ namespace KeePassStore {
             KeePassLib.Keys.CompositeKey compositeKey = new KeePassLib.Keys.CompositeKey();
 
             try {
-                if (MasterPassword == null) compositeKey.AddUserKey(new KeePassLib.Keys.KcpPassword(Utilities.SecureStringToString(MasterPassword)));
+                if (MasterPassword != null) compositeKey.AddUserKey(new KeePassLib.Keys.KcpPassword(Utilities.SecureStringToString(MasterPassword)));
                 if (string.IsNullOrEmpty(KeyFile) == false) compositeKey.AddUserKey(new KeePassLib.Keys.KcpKeyFile(KeyFile, true));
                 if (WindowsUserAccount.IsPresent == true) compositeKey.AddUserKey(new KeePassLib.Keys.KcpUserAccount());
 
@@ -189,7 +189,7 @@ namespace KeePassStore {
             KeePassLib.Keys.CompositeKey compositeKey = new KeePassLib.Keys.CompositeKey();
 
             try {
-                if (MasterPassword == null) compositeKey.AddUserKey(new KeePassLib.Keys.KcpPassword(Utilities.SecureStringToString(MasterPassword)));
+                if (MasterPassword != null) compositeKey.AddUserKey(new KeePassLib.Keys.KcpPassword(Utilities.SecureStringToString(MasterPassword)));
                 if (string.IsNullOrEmpty(KeyFile) == false) compositeKey.AddUserKey(new KeePassLib.Keys.KcpKeyFile(KeyFile, true));
                 if (WindowsUserAccount.IsPresent == true) compositeKey.AddUserKey(new KeePassLib.Keys.KcpUserAccount());
 

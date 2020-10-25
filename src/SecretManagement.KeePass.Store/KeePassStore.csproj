@@ -51,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HelperClasses\KeePassSecret.cs" />
     <Compile Include="HelperClasses\KeePassVault.cs" />
     <Compile Include="HelperClasses\Utilities.cs" />
     <Compile Include="KeePassStore.cs" />

@@ -7,7 +7,7 @@ function Open-KeePassVault {
         $VaultName
     )
     try {
-        $Script:pwDatabase = [KeePassStore.KeePassVault]::OpenKeePassVault($VaultName, $PSCmdlet)
+        return [KeePassStore.KeePassVault]::OpenKeePassVault($VaultName, $PSCmdlet)
     } catch {
         $PSCmdlet.ThrowTerminatingError(
             [System.Management.Automation.ErrorRecord]::new(

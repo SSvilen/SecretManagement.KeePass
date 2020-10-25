@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 using System.Management.Automation;
 
 namespace KeePassStore {
-    internal partial class Utilities {
+    internal class Utilities {
         public static string localConfigurationPath;
 
         static Utilities() {
